@@ -10,9 +10,13 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service("otpEmailService")
 public class EmailServiceImpl implements EmailService {
+
+    private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
 
     private final JavaMailSender mailSender;
 
@@ -70,6 +74,8 @@ public class EmailServiceImpl implements EmailService {
 
         } catch (MailException exception) {
 
+            log.error("Failed to send email to {}", recipient, exception);
+
             throw new IllegalStateException(
                     "Failed to send email to "
                             + recipient,
@@ -111,6 +117,8 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(mimeMessage);
 
         } catch (MessagingException | MailException exception) {
+
+            log.error("Failed to send HTML email to {}", recipient, exception);
 
             throw new IllegalStateException(
                     "Failed to send HTML email to "
