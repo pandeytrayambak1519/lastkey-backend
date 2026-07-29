@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+
+    <!-- ===================================================== -->
+    <!-- APPLICATION PROPERTIES -->
+    <!-- ===================================================== -->
+
+    <springProperty
+            scope="context"
+            name="APPLICATION_NAME"
+            source="spring.application.name"
+            defaultValue="lastkey-backend"
+    />
+
+    <springProperty
+            scope="context"
+            name="ACTIVE_PROFILE"
+            source="spring.profiles.active"
+            defaultValue="default"
+    />
+
+    <property
+            name="LOG_PATH"
+            value="logs"
+    />
+
+    <property
+            name="LOG_PATTERN"
+            value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{requestId:-N/A}] %logger{40} - %msg%n"
+    />
+
+    <!-- ===================================================== -->
+    <!-- CONSOLE APPENDER -->
+    <!-- ===================================================== -->
+
+    <appender
+            name="CONSOLE"
+            class="ch.qos.logback.core.ConsoleAppender"
+    >
+
+        <encoder>
+
+            <pattern>
+                ${LOG_PATTERN}
+            </pattern>
+
+            <charset>
+                UTF-8
+            </charset>
+
+        </encoder>
+
+    </appender>
+
+    <!-- ===================================================== -->
+    <!-- GENERAL APPLICATION LOG -->
+    <!-- ===================================================== -->
+
+    <appender
+            name="APPLICATION_FILE"
+            class="ch.qos.logback.core.rolling.RollingFileAppender"
+    >
+
+        <file>
+            ${LOG_PATH}/application.log
+        </file>
+
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy"
+        >
+
+            <fileNamePattern>
+                ${LOG_PATH}/archive/application-%d{yyyy-MM-dd}.%i.log.gz
+            </fileNamePattern>
+
+            <maxFileSize>
+                20MB
+            </maxFileSize>
+
+            <maxHistory>
+                30
+            </maxHistory>
+
+            <totalSizeCap>
+                2GB
+            </totalSizeCap>
+
+            <cleanHistoryOnStart>
+                false
+            </cleanHistoryOnStart>
+
+        </rollingPolicy>
+
+        <encoder>
+
+            <pattern>
+                ${LOG_PATTERN}
+            </pattern>
+
+            <charset>
+                UTF-8
+            </charset>
+
+        </encoder>
+
+    </appender>
+
+    <!-- ===================================================== -->
+    <!-- ERROR LOG -->
+    <!-- ===================================================== -->
+
+    <appender
+            name="ERROR_FILE"
+            class="ch.qos.logback.core.rolling.RollingFileAppender"
+    >
+
+        <file>
+            ${LOG_PATH}/error.log
+        </file>
+
+        <filter
+                class="ch.qos.logback.classic.filter.ThresholdFilter"
+        >
+
+            <level>
+                ERROR
+            </level>
+
+        </filter>
+
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy"
+        >
+
+            <fileNamePattern>
+                ${LOG_PATH}/archive/error-%d{yyyy-MM-dd}.%i.log.gz
+            </fileNamePattern>
+
+            <maxFileSize>
+                20MB
+            </maxFileSize>
+
+            <maxHistory>
+                60
+            </maxHistory>
+
+            <totalSizeCap>
+                2GB
+            </totalSizeCap>
+
+        </rollingPolicy>
+
+        <encoder>
+
+            <pattern>
+                ${LOG_PATTERN}
+            </pattern>
+
+            <charset>
+                UTF-8
+            </charset>
+
+        </encoder>
+
+    </appender>
+
+    <!-- ===================================================== -->
+    <!-- SECURITY LOG -->
+    <!-- ===================================================== -->
+
+    <appender
+            name="SECURITY_FILE"
+            class="ch.qos.logback.core.rolling.RollingFileAppender"
+    >
+
+        <file>
+            ${LOG_PATH}/security.log
+        </file>
+
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy"
+        >
+
+            <fileNamePattern>
+                ${LOG_PATH}/archive/security-%d{yyyy-MM-dd}.%i.log.gz
+            </fileNamePattern>
+
+            <maxFileSize>
+                10MB
+            </maxFileSize>
+
+            <maxHistory>
+                60
+            </maxHistory>
+
+            <totalSizeCap>
+                1GB
+            </totalSizeCap>
+
+        </rollingPolicy>
+
+        <encoder>
+
+            <pattern>
+                ${LOG_PATTERN}
+            </pattern>
+
+            <charset>
+                UTF-8
+            </charset>
+
+        </encoder>
+
+    </appender>
+
+    <!-- ===================================================== -->
+    <!-- REQUEST LOG -->
+    <!-- ===================================================== -->
+
+    <appender
+            name="REQUEST_FILE"
+            class="ch.qos.logback.core.rolling.RollingFileAppender"
+    >
+
+        <file>
+            ${LOG_PATH}/request.log
+        </file>
+
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy"
+        >
+
+            <fileNamePattern>
+                ${LOG_PATH}/archive/request-%d{yyyy-MM-dd}.%i.log.gz
+            </fileNamePattern>
+
+            <maxFileSize>
+                20MB
+            </maxFileSize>
+
+            <maxHistory>
+                30
+            </maxHistory>
+
+            <totalSizeCap>
+                1GB
+            </totalSizeCap>
+
+        </rollingPolicy>
+
+        <encoder>
+
+            <pattern>
+                ${LOG_PATTERN}
+            </pattern>
+
+            <charset>
+                UTF-8
+            </charset>
+
+        </encoder>
+
+    </appender>
+
+    <!-- ===================================================== -->
+    <!-- CUSTOM LOGGERS -->
+    <!-- ===================================================== -->
+
+    <logger
+            name="com.lastkey.backend.security"
+            level="INFO"
+            additivity="false"
+    >
+
+        <appender-ref ref="SECURITY_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APPLICATION_FILE"/>
+
+    </logger>
+
+    <logger
+            name="com.lastkey.backend.common.logging"
+            level="INFO"
+            additivity="false"
+    >
+
+        <appender-ref ref="REQUEST_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APPLICATION_FILE"/>
+
+    </logger>
+
+    <logger
+            name="org.springframework.security"
+            level="INFO"
+    />
+
+    <logger
+            name="org.hibernate.SQL"
+            level="WARN"
+    />
+
+    <logger
+            name="org.hibernate.orm.jdbc.bind"
+            level="WARN"
+    />
+
+    <!-- ===================================================== -->
+    <!-- PROFILE-SPECIFIC CONFIGURATION -->
+    <!-- ===================================================== -->
+
+    <springProfile name="dev">
+
+        <logger
+                name="com.lastkey.backend"
+                level="DEBUG"
+        />
+
+        <logger
+                name="org.springframework.web"
+                level="INFO"
+        />
+
+    </springProfile>
+
+    <springProfile name="prod">
+
+        <logger
+                name="com.lastkey.backend"
+                level="INFO"
+        />
+
+        <logger
+                name="org.springframework.web"
+                level="WARN"
+        />
+
+        <logger
+                name="org.springframework.security"
+                level="WARN"
+        />
+
+    </springProfile>
+
+    <!-- ===================================================== -->
+    <!-- ROOT LOGGER -->
+    <!-- ===================================================== -->
+
+    <root level="INFO">
+
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APPLICATION_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+
+    </root>
+
+</configuration>

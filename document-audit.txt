@@ -1,0 +1,3435 @@
+package com.lastkey.backend.document.controller;
+
+import com.lastkey.backend.document.dto.request.DocumentSearchRequest;
+import com.lastkey.backend.document.dto.request.DocumentUpdateRequest;
+import com.lastkey.backend.document.dto.request.DocumentUploadRequest;
+import com.lastkey.backend.document.dto.response.DocumentListResponse;
+import com.lastkey.backend.document.dto.response.DocumentResponse;
+import com.lastkey.backend.document.dto.response.DocumentSearchResponse;
+import com.lastkey.backend.document.service.DocumentService;
+import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/documents")
+public class DocumentController {
+
+    private final DocumentService documentService;
+
+    public DocumentController(
+            DocumentService documentService
+    ) {
+        this.documentService = documentService;
+    }
+
+    // =========================================================
+    // Upload document
+    // =========================================================
+
+    @PostMapping(
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<DocumentResponse> uploadDocument(
+
+            @RequestPart("file")
+            MultipartFile file,
+
+            @Valid
+            @RequestPart("request")
+            DocumentUploadRequest request,
+
+            Authentication authentication
+    ) {
+
+        DocumentResponse response =
+                documentService.uploadDocument(
+                        file,
+                        request,
+                        getAuthenticatedEmail(authentication)
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    // =========================================================
+    // Get current user's active documents
+    // =========================================================
+
+    @GetMapping
+    public ResponseEntity<DocumentListResponse> getMyDocuments(
+
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "10")
+            int size,
+
+            @RequestParam(defaultValue = "createdAt")
+            String sortBy,
+
+            @RequestParam(defaultValue = "desc")
+            String sortDirection,
+
+            Authentication authentication
+    ) {
+
+        DocumentListResponse response =
+                documentService.getMyDocuments(
+                        getAuthenticatedEmail(authentication),
+                        page,
+                        size,
+                        sortBy,
+                        sortDirection
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // Get favorite documents
+    // =========================================================
+
+    @GetMapping("/favorites")
+    public ResponseEntity<DocumentListResponse> getFavoriteDocuments(
+
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "10")
+            int size,
+
+            Authentication authentication
+    ) {
+
+        DocumentListResponse response =
+                documentService.getFavoriteDocuments(
+                        getAuthenticatedEmail(authentication),
+                        page,
+                        size
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // Get archived documents
+    // =========================================================
+
+    @GetMapping("/archived")
+    public ResponseEntity<DocumentListResponse> getArchivedDocuments(
+
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "10")
+            int size,
+
+            Authentication authentication
+    ) {
+
+        DocumentListResponse response =
+                documentService.getArchivedDocuments(
+                        getAuthenticatedEmail(authentication),
+                        page,
+                        size
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // Simple keyword search
+    // =========================================================
+
+    @GetMapping("/search")
+    public ResponseEntity<DocumentListResponse> searchDocuments(
+
+            @RequestParam
+            String keyword,
+
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "10")
+            int size,
+
+            Authentication authentication
+    ) {
+
+        DocumentListResponse response =
+                documentService.searchDocuments(
+                        keyword,
+                        getAuthenticatedEmail(authentication),
+                        page,
+                        size
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // Advanced search and filter
+    // =========================================================
+
+    @PostMapping("/advanced-search")
+    public ResponseEntity<DocumentSearchResponse>
+    advancedSearchDocuments(
+
+            @RequestBody(required = false)
+            DocumentSearchRequest request,
+
+            Authentication authentication
+    ) {
+
+        DocumentSearchResponse response =
+                documentService.searchDocuments(
+                        request,
+                        getAuthenticatedEmail(authentication)
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // Filter documents by category
+    // =========================================================
+
+    @GetMapping("/category/{categoryId}")
+    public ResponseEntity<DocumentListResponse>
+    getDocumentsByCategory(
+
+            @PathVariable
+            UUID categoryId,
+
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "10")
+            int size,
+
+            Authentication authentication
+    ) {
+
+        DocumentListResponse response =
+                documentService.getDocumentsByCategory(
+                        categoryId,
+                        getAuthenticatedEmail(authentication),
+                        page,
+                        size
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // Get document by ID
+    // =========================================================
+
+    @GetMapping("/{documentId}")
+    public ResponseEntity<DocumentResponse> getDocumentById(
+
+            @PathVariable
+            UUID documentId,
+
+            Authentication authentication
+    ) {
+
+        DocumentResponse response =
+                documentService.getDocumentById(
+                        documentId,
+                        getAuthenticatedEmail(authentication)
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // Update document
+    // =========================================================
+
+    @PatchMapping("/{documentId}")
+    public ResponseEntity<DocumentResponse> updateDocument(
+
+            @PathVariable
+            UUID documentId,
+
+            @Valid
+            @RequestBody
+            DocumentUpdateRequest request,
+
+            Authentication authentication
+    ) {
+
+        DocumentResponse response =
+                documentService.updateDocument(
+                        documentId,
+                        request,
+                        getAuthenticatedEmail(authentication)
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // Favorite or unfavorite document
+    // =========================================================
+
+    @PatchMapping("/{documentId}/favorite")
+    public ResponseEntity<DocumentResponse> toggleFavorite(
+
+            @PathVariable
+            UUID documentId,
+
+            Authentication authentication
+    ) {
+
+        DocumentResponse response =
+                documentService.toggleFavorite(
+                        documentId,
+                        getAuthenticatedEmail(authentication)
+                );
+
+        return ResponseEntity.ok(response);
+    }
+    // =========================================================
+    // Archive document
+    // =========================================================
+
+    @PatchMapping("/{documentId}/archive")
+    public ResponseEntity<DocumentResponse> archiveDocument(
+
+            @PathVariable
+            UUID documentId,
+
+            Authentication authentication
+    ) {
+
+        DocumentResponse response =
+                documentService.archiveDocument(
+                        documentId,
+                        getAuthenticatedEmail(authentication)
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // Restore archived document
+    // =========================================================
+
+    @PatchMapping("/{documentId}/restore")
+    public ResponseEntity<DocumentResponse> restoreDocument(
+
+            @PathVariable
+            UUID documentId,
+
+            Authentication authentication
+    ) {
+
+        DocumentResponse response =
+                documentService.restoreDocument(
+                        documentId,
+                        getAuthenticatedEmail(authentication)
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // Download document
+    // =========================================================
+
+    @GetMapping("/{documentId}/download")
+    public ResponseEntity<Resource> downloadDocument(
+
+            @PathVariable
+            UUID documentId,
+
+            Authentication authentication
+    ) {
+
+        String email =
+                getAuthenticatedEmail(authentication);
+
+        DocumentResponse document =
+                documentService.getDocumentForDownload(
+                        documentId,
+                        email
+                );
+
+        Resource resource =
+                documentService.downloadDocument(
+                        documentId,
+                        email
+                );
+
+        MediaType mediaType =
+                resolveMediaType(
+                        document.getMimeType()
+                );
+
+        ContentDisposition contentDisposition =
+                ContentDisposition
+                        .attachment()
+                        .filename(
+                                getSafeDownloadFileName(
+                                        document.getOriginalFileName()
+                                ),
+                                StandardCharsets.UTF_8
+                        )
+                        .build();
+
+        ResponseEntity.BodyBuilder responseBuilder =
+                ResponseEntity.ok()
+                        .contentType(mediaType)
+                        .header(
+                                HttpHeaders.CONTENT_DISPOSITION,
+                                contentDisposition.toString()
+                        );
+
+        if (document.getFileSize() != null
+                && document.getFileSize() >= 0) {
+
+            responseBuilder.contentLength(
+                    document.getFileSize()
+            );
+        }
+
+        return responseBuilder.body(resource);
+    }
+
+    // =========================================================
+    // Soft delete document
+    // =========================================================
+
+    @DeleteMapping("/{documentId}")
+    public ResponseEntity<Void> deleteDocument(
+
+            @PathVariable
+            UUID documentId,
+
+            Authentication authentication
+    ) {
+
+        documentService.deleteDocument(
+                documentId,
+                getAuthenticatedEmail(authentication)
+        );
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // =========================================================
+    // Authentication helper
+    // =========================================================
+
+    private String getAuthenticatedEmail(
+            Authentication authentication
+    ) {
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication.getName() == null
+                || authentication.getName().isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Authenticated user information is unavailable"
+            );
+        }
+
+        return authentication.getName().trim();
+    }
+
+    // =========================================================
+    // Media type helper
+    // =========================================================
+
+    private MediaType resolveMediaType(
+            String mimeType
+    ) {
+
+        if (mimeType == null
+                || mimeType.isBlank()) {
+
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+
+        try {
+            return MediaType.parseMediaType(
+                    mimeType.trim()
+            );
+
+        } catch (IllegalArgumentException exception) {
+
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+    }
+
+    // =========================================================
+    // Download file-name helper
+    // =========================================================
+
+    private String getSafeDownloadFileName(
+            String fileName
+    ) {
+
+        if (fileName == null
+                || fileName.isBlank()) {
+
+            return "document";
+        }
+
+        return fileName
+                .replace("\\", "_")
+                .replace("/", "_")
+                .replace("\"", "")
+                .replace("\r", "")
+                .replace("\n", "")
+                .trim();
+    }
+}package com.lastkey.backend.document.service;
+
+import com.lastkey.backend.document.dto.request.DocumentSearchRequest;
+import com.lastkey.backend.document.dto.request.DocumentUpdateRequest;
+import com.lastkey.backend.document.dto.request.DocumentUploadRequest;
+import com.lastkey.backend.document.dto.response.DocumentListResponse;
+import com.lastkey.backend.document.dto.response.DocumentResponse;
+import com.lastkey.backend.document.dto.response.DocumentSearchResponse;
+import org.springframework.core.io.Resource;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.UUID;
+
+public interface DocumentService {
+
+    DocumentResponse uploadDocument(
+            MultipartFile file,
+            DocumentUploadRequest request,
+            String email
+    );
+
+    DocumentResponse getDocumentById(
+            UUID documentId,
+            String email
+    );
+
+    DocumentListResponse getMyDocuments(
+            String email,
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection
+    );
+
+    DocumentResponse updateDocument(
+            UUID documentId,
+            DocumentUpdateRequest request,
+            String email
+    );
+
+    DocumentResponse toggleFavorite(
+            UUID documentId,
+            String email
+    );
+
+    DocumentListResponse getFavoriteDocuments(
+            String email,
+            int page,
+            int size
+    );
+
+    DocumentResponse archiveDocument(
+            UUID documentId,
+            String email
+    );
+
+    DocumentResponse restoreDocument(
+            UUID documentId,
+            String email
+    );
+
+    DocumentListResponse getArchivedDocuments(
+            String email,
+            int page,
+            int size
+    );
+
+    Resource downloadDocument(
+            UUID documentId,
+            String email
+    );
+
+    DocumentResponse getDocumentForDownload(
+            UUID documentId,
+            String email
+    );
+
+    /*
+     * Existing simple keyword search.
+     */
+    DocumentListResponse searchDocuments(
+            String keyword,
+            String email,
+            int page,
+            int size
+    );
+
+    /*
+     * Advanced search and filter.
+     *
+     * Supports:
+     * - keyword
+     * - category
+     * - file type
+     * - favorite
+     * - archived
+     * - expiry date range
+     * - created date range
+     * - pagination
+     * - sorting
+     */
+    DocumentSearchResponse searchDocuments(
+            DocumentSearchRequest request,
+            String email
+    );
+
+    DocumentListResponse getDocumentsByCategory(
+            UUID categoryId,
+            String email,
+            int page,
+            int size
+    );
+
+    void deleteDocument(
+            UUID documentId,
+            String email
+    );
+}package com.lastkey.backend.document.service.impl;
+
+import com.lastkey.backend.category.entity.Category;
+import com.lastkey.backend.category.repository.CategoryRepository;
+import com.lastkey.backend.document.dto.request.DocumentSearchRequest;
+import com.lastkey.backend.document.dto.request.DocumentUpdateRequest;
+import com.lastkey.backend.document.dto.request.DocumentUploadRequest;
+import com.lastkey.backend.document.dto.response.DocumentListResponse;
+import com.lastkey.backend.document.dto.response.DocumentResponse;
+import com.lastkey.backend.document.dto.response.DocumentSearchResponse;
+import com.lastkey.backend.document.dto.storage.StorageResult;
+import com.lastkey.backend.document.entity.Document;
+import com.lastkey.backend.document.entity.DocumentAccessLog;
+import com.lastkey.backend.document.enums.AccessAction;
+import com.lastkey.backend.document.enums.DocumentStatus;
+import com.lastkey.backend.document.exception.DocumentNotFoundException;
+import com.lastkey.backend.document.mapper.DocumentMapper;
+import com.lastkey.backend.document.repository.DocumentAccessLogRepository;
+import com.lastkey.backend.document.repository.DocumentRepository;
+import com.lastkey.backend.document.service.DocumentService;
+import com.lastkey.backend.document.service.FileStorageService;
+import com.lastkey.backend.document.specification.DocumentSpecification;
+import com.lastkey.backend.notification.service.NotificationEventService;
+import com.lastkey.backend.user.entity.User;
+import com.lastkey.backend.user.repository.UserRepository;
+import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
+
+@Service
+@Transactional
+public class DocumentServiceImpl implements DocumentService {
+
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "title",
+            "createdAt",
+            "updatedAt",
+            "fileSize",
+            "expiryDate"
+    );
+
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int MAX_PAGE_SIZE = 100;
+
+    private final DocumentRepository documentRepository;
+    private final DocumentAccessLogRepository accessLogRepository;
+    private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
+    private final DocumentMapper documentMapper;
+    private final FileStorageService fileStorageService;
+    private final NotificationEventService notificationEventService;
+
+    public DocumentServiceImpl(
+            DocumentRepository documentRepository,
+            DocumentAccessLogRepository accessLogRepository,
+            CategoryRepository categoryRepository,
+            UserRepository userRepository,
+            DocumentMapper documentMapper,
+            FileStorageService fileStorageService,
+            NotificationEventService notificationEventService
+    ) {
+        this.documentRepository = documentRepository;
+        this.accessLogRepository = accessLogRepository;
+        this.categoryRepository = categoryRepository;
+        this.userRepository = userRepository;
+        this.documentMapper = documentMapper;
+        this.fileStorageService = fileStorageService;
+        this.notificationEventService = notificationEventService;
+    }
+
+    // =========================================================
+    // Upload document
+    // =========================================================
+
+    @Override
+    public DocumentResponse uploadDocument(
+            MultipartFile file,
+            DocumentUploadRequest request,
+            String email
+    ) {
+        if (request == null) {
+            throw new IllegalArgumentException(
+                    "Document upload details are required"
+            );
+        }
+
+        User user = getUser(email);
+
+        Category category = null;
+
+        if (request.getCategoryId() != null) {
+            category = getAccessibleCategory(
+                    request.getCategoryId(),
+                    user
+            );
+        }
+
+        String mimeType =
+                fileStorageService.getMimeType(file);
+
+        String checksum =
+                fileStorageService.calculateChecksum(file);
+
+        if (documentRepository.existsByChecksumAndOwner(
+                checksum,
+                user
+        )) {
+            throw new IllegalArgumentException(
+                    "This document has already been uploaded"
+            );
+        }
+
+        String ownerFolder = user.getId().toString();
+
+        StorageResult storageResult =
+                fileStorageService.storeFile(
+                        file,
+                        ownerFolder
+                );
+
+        String storedFileName =
+                storageResult.getStoredFileName();
+
+        try {
+            Document document = Document.builder()
+                    .title(normalizeRequiredText(
+                            request.getTitle(),
+                            "Document title is required"
+                    ))
+                    .description(
+                            normalizeNullableText(
+                                    request.getDescription()
+                            )
+                    )
+                    .originalFileName(
+                            storageResult.getOriginalFileName() != null
+                                    ? storageResult.getOriginalFileName()
+                                    : getOriginalFileName(file)
+                    )
+                    .storedFileName(storedFileName)
+                    .fileType(
+                            getFileType(
+                                    storageResult.getOriginalFileName() != null
+                                            ? storageResult.getOriginalFileName()
+                                            : getOriginalFileName(file),
+                                    storageResult.getMimeType() != null
+                                            ? storageResult.getMimeType()
+                                            : mimeType
+                            )
+                    )
+                    .mimeType(
+                            storageResult.getMimeType() != null
+                                    ? storageResult.getMimeType()
+                                    : mimeType
+                    )
+                    .fileSize(
+                            storageResult.getOriginalSize() != null
+                                    ? storageResult.getOriginalSize()
+                                    : file.getSize()
+                    )
+                    .storagePath(ownerFolder)
+                    .checksum(
+                            storageResult.getOriginalChecksum() != null
+                                    ? storageResult.getOriginalChecksum()
+                                    : checksum
+                    )
+                    .encrypted(storageResult.isEncrypted())
+                    .encryptionAlgorithm(storageResult.getEncryptionAlgorithm())
+                    .encryptionKeyVersion(
+                            storageResult.getEncryptionKeyVersion() != null
+                                    ? String.valueOf(storageResult.getEncryptionKeyVersion())
+                                    : null
+                    )
+                    .initializationVector(storageResult.getInitializationVector())
+                    .encryptedChecksum(storageResult.getEncryptedChecksum())
+                    .favorite(false)
+                    .archived(false)
+                    .status(DocumentStatus.ACTIVE)
+                    .expiryDate(request.getExpiryDate())
+                    .owner(user)
+                    .category(category)
+                    .build();
+
+            Document savedDocument =
+                    documentRepository.save(document);
+
+            saveAccessLog(
+                    savedDocument,
+                    user,
+                    AccessAction.UPLOAD
+            );
+
+            notificationEventService.documentUploaded(
+                    savedDocument
+            );
+
+            return documentMapper.toResponse(savedDocument);
+
+        } catch (RuntimeException exception) {
+            fileStorageService.deleteFile(
+                    storedFileName,
+                    ownerFolder
+            );
+
+            throw exception;
+        }
+    }
+
+    // =========================================================
+    // Get document
+    // =========================================================
+
+    @Override
+    public DocumentResponse getDocumentById(
+            UUID documentId,
+            String email
+    ) {
+        User user = getUser(email);
+
+        Document document = getOwnedDocument(
+                documentId,
+                user
+        );
+
+        saveAccessLog(
+                document,
+                user,
+                AccessAction.VIEW
+        );
+
+        return documentMapper.toResponse(document);
+    }
+
+    // =========================================================
+    // Get active documents
+    // =========================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public DocumentListResponse getMyDocuments(
+            String email,
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection
+    ) {
+        User user = getUser(email);
+
+        Pageable pageable = createPageable(
+                page,
+                size,
+                sortBy,
+                sortDirection
+        );
+
+        Page<Document> documentPage =
+                documentRepository.findByOwnerAndStatus(
+                        user,
+                        DocumentStatus.ACTIVE,
+                        pageable
+                );
+
+        return buildListResponse(documentPage);
+    }
+
+    // =========================================================
+    // Update document metadata
+    // =========================================================
+
+    @Override
+    public DocumentResponse updateDocument(
+            UUID documentId,
+            DocumentUpdateRequest request,
+            String email
+    ) {
+        if (request == null) {
+            throw new IllegalArgumentException(
+                    "Document update details are required"
+            );
+        }
+
+        User user = getUser(email);
+
+        Document document = getOwnedDocument(
+                documentId,
+                user
+        );
+
+        if (request.getTitle() != null) {
+            document.setTitle(
+                    normalizeRequiredText(
+                            request.getTitle(),
+                            "Document title cannot be blank"
+                    )
+            );
+        }
+
+        if (request.getDescription() != null) {
+            document.setDescription(
+                    normalizeNullableText(
+                            request.getDescription()
+                    )
+            );
+        }
+
+        if (request.getCategoryId() != null) {
+            Category category = getAccessibleCategory(
+                    request.getCategoryId(),
+                    user
+            );
+
+            document.setCategory(category);
+        }
+
+        if (request.getFavorite() != null) {
+            document.setFavorite(request.getFavorite());
+        }
+
+        if (request.getArchived() != null) {
+            applyArchiveState(
+                    document,
+                    request.getArchived()
+            );
+        }
+
+        if (request.getExpiryDate() != null) {
+            document.setExpiryDate(
+                    request.getExpiryDate()
+            );
+        }
+
+        Document updatedDocument =
+                documentRepository.save(document);
+
+        saveAccessLog(
+                updatedDocument,
+                user,
+                AccessAction.UPDATE
+        );
+
+        notificationEventService.documentUpdated(
+                updatedDocument
+        );
+
+        return documentMapper.toResponse(updatedDocument);
+    }
+
+    // =========================================================
+    // Favorite / unfavorite
+    // =========================================================
+
+    @Override
+    public DocumentResponse toggleFavorite(
+            UUID documentId,
+            String email
+    ) {
+        User user = getUser(email);
+
+        Document document = getOwnedDocument(
+                documentId,
+                user
+        );
+
+        boolean currentlyFavorite =
+                Boolean.TRUE.equals(
+                        document.getFavorite()
+                );
+
+        document.setFavorite(!currentlyFavorite);
+
+        Document updatedDocument =
+                documentRepository.save(document);
+
+        saveAccessLog(
+                updatedDocument,
+                user,
+                currentlyFavorite
+                        ? AccessAction.UNMARK_FAVORITE
+                        : AccessAction.MARK_FAVORITE
+        );
+
+        return documentMapper.toResponse(updatedDocument);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DocumentListResponse getFavoriteDocuments(
+            String email,
+            int page,
+            int size
+    ) {
+        User user = getUser(email);
+
+        Pageable pageable = createDefaultPageable(
+                page,
+                size
+        );
+
+        Page<Document> documentPage =
+                documentRepository
+                        .findByOwnerAndFavoriteTrueAndStatus(
+                                user,
+                                DocumentStatus.ACTIVE,
+                                pageable
+                        );
+
+        return buildListResponse(documentPage);
+    }
+
+    // =========================================================
+    // Archive document
+    // =========================================================
+
+    @Override
+    public DocumentResponse archiveDocument(
+            UUID documentId,
+            String email
+    ) {
+        User user = getUser(email);
+
+        Document document = getOwnedDocument(
+                documentId,
+                user
+        );
+
+        applyArchiveState(document, true);
+
+        Document updatedDocument =
+                documentRepository.save(document);
+
+        saveAccessLog(
+                updatedDocument,
+                user,
+                AccessAction.ARCHIVE
+        );
+
+        return documentMapper.toResponse(updatedDocument);
+    }
+
+    // =========================================================
+    // Restore document
+    // =========================================================
+
+    @Override
+    public DocumentResponse restoreDocument(
+            UUID documentId,
+            String email
+    ) {
+        User user = getUser(email);
+
+        Document document = getOwnedDocument(
+                documentId,
+                user
+        );
+
+        applyArchiveState(document, false);
+
+        Document updatedDocument =
+                documentRepository.save(document);
+
+        saveAccessLog(
+                updatedDocument,
+                user,
+                AccessAction.RESTORE
+        );
+
+        return documentMapper.toResponse(updatedDocument);
+    }
+
+    // =========================================================
+    // Get archived documents
+    // =========================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public DocumentListResponse getArchivedDocuments(
+            String email,
+            int page,
+            int size
+    ) {
+        User user = getUser(email);
+
+        Pageable pageable = createDefaultPageable(
+                page,
+                size
+        );
+
+        Page<Document> documentPage =
+                documentRepository
+                        .findByOwnerAndArchivedTrueAndStatus(
+                                user,
+                                DocumentStatus.ARCHIVED,
+                                pageable
+                        );
+
+        return buildListResponse(documentPage);
+    }
+
+    // =========================================================
+    // Download document
+    // =========================================================
+
+    @Override
+    public Resource downloadDocument(
+            UUID documentId,
+            String email
+    ) {
+        User user = getUser(email);
+
+        Document document = getOwnedDocument(
+                documentId,
+                user
+        );
+
+        Resource resource =
+                fileStorageService.loadFileAsResource(
+                        document.getStoredFileName(),
+                        document.getStoragePath()
+                );
+
+        saveAccessLog(
+                document,
+                user,
+                AccessAction.DOWNLOAD
+        );
+
+        return resource;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DocumentResponse getDocumentForDownload(
+            UUID documentId,
+            String email
+    ) {
+        User user = getUser(email);
+
+        Document document = getOwnedDocument(
+                documentId,
+                user
+        );
+
+        return documentMapper.toResponse(document);
+    }
+
+    // =========================================================
+    // Search documents
+    // =========================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public DocumentListResponse searchDocuments(
+            String keyword,
+            String email,
+            int page,
+            int size
+    ) {
+        User user = getUser(email);
+
+        String searchKeyword =
+                keyword == null
+                        ? ""
+                        : keyword.trim();
+
+        Pageable pageable = createDefaultPageable(
+                page,
+                size
+        );
+
+        Page<Document> documentPage =
+                documentRepository
+                        .findByOwnerAndTitleContainingIgnoreCaseAndStatus(
+                                user,
+                                searchKeyword,
+                                DocumentStatus.ACTIVE,
+                                pageable
+                        );
+
+        return buildListResponse(documentPage);
+    }
+
+    // =========================================================
+    // Advanced search and filter
+    // =========================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public DocumentSearchResponse searchDocuments(
+            DocumentSearchRequest request,
+            String email
+    ) {
+        if (request == null) {
+            throw new IllegalArgumentException(
+                    "Document search request is required"
+            );
+        }
+
+        User user = getUser(email);
+
+        validateSearchDateRanges(request);
+
+        if (request.getCategoryId() != null) {
+            getAccessibleCategory(
+                    request.getCategoryId(),
+                    user
+            );
+        }
+
+        Pageable pageable =
+                createSearchPageable(request);
+
+        Page<Document> documentPage =
+                documentRepository.findAll(
+                        DocumentSpecification.build(
+                                user,
+                                request
+                        ),
+                        pageable
+                );
+
+        return DocumentSearchResponse.builder()
+                .documents(
+                        documentPage
+                                .getContent()
+                                .stream()
+                                .map(
+                                        documentMapper
+                                                ::toSearchItemResponse
+                                )
+                                .toList()
+                )
+                .currentPage(
+                        documentPage.getNumber()
+                )
+                .pageSize(
+                        documentPage.getSize()
+                )
+                .totalElements(
+                        documentPage.getTotalElements()
+                )
+                .totalPages(
+                        documentPage.getTotalPages()
+                )
+                .first(
+                        documentPage.isFirst()
+                )
+                .last(
+                        documentPage.isLast()
+                )
+                .hasNext(
+                        documentPage.hasNext()
+                )
+                .hasPrevious(
+                        documentPage.hasPrevious()
+                )
+                .build();
+    }
+
+    // =========================================================
+    // Filter by category
+    // =========================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public DocumentListResponse getDocumentsByCategory(
+            UUID categoryId,
+            String email,
+            int page,
+            int size
+    ) {
+        if (categoryId == null) {
+            throw new IllegalArgumentException(
+                    "Category ID is required"
+            );
+        }
+
+        User user = getUser(email);
+
+        getAccessibleCategory(categoryId, user);
+
+        Pageable pageable = createDefaultPageable(
+                page,
+                size
+        );
+
+        Page<Document> documentPage =
+                documentRepository
+                        .findByOwnerAndCategoryIdAndStatus(
+                                user,
+                                categoryId,
+                                DocumentStatus.ACTIVE,
+                                pageable
+                        );
+
+        return buildListResponse(documentPage);
+    }
+
+    // =========================================================
+    // Soft delete document
+    // =========================================================
+
+    @Override
+    public void deleteDocument(
+            UUID documentId,
+            String email
+    ) {
+        User user = getUser(email);
+
+        Document document = getOwnedDocument(
+                documentId,
+                user
+        );
+
+        document.setFavorite(false);
+        document.setArchived(false);
+        document.setStatus(DocumentStatus.DELETED);
+
+        Document deletedDocument =
+                documentRepository.save(document);
+
+        saveAccessLog(
+                deletedDocument,
+                user,
+                AccessAction.DELETE
+        );
+
+        notificationEventService.documentDeleted(
+                deletedDocument
+        );
+    }
+
+    // =========================================================
+    // User helper
+    // =========================================================
+
+    private User getUser(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Authenticated user email is required"
+            );
+        }
+
+        return userRepository
+                .findByEmail(email.trim())
+                .orElseThrow(
+                        () -> new IllegalArgumentException(
+                                "Authenticated user was not found"
+                        )
+                );
+    }
+
+    // =========================================================
+    // Document helper
+    // =========================================================
+
+    private Document getOwnedDocument(
+            UUID documentId,
+            User user
+    ) {
+        if (documentId == null) {
+            throw new IllegalArgumentException(
+                    "Document ID is required"
+            );
+        }
+
+        return documentRepository
+                .findByIdAndOwnerAndStatusNot(
+                        documentId,
+                        user,
+                        DocumentStatus.DELETED
+                )
+                .orElseThrow(
+                        () -> new DocumentNotFoundException(
+                                "Document not found with id: "
+                                        + documentId
+                        )
+                );
+    }
+
+    // =========================================================
+    // Category helper
+    // =========================================================
+
+    private Category getAccessibleCategory(
+            UUID categoryId,
+            User user
+    ) {
+        if (categoryId == null) {
+            throw new IllegalArgumentException(
+                    "Category ID is required"
+            );
+        }
+
+        return categoryRepository
+                .findByIdAndOwner(categoryId, user)
+                .orElseGet(
+                        () -> categoryRepository
+                                .findByIdAndSystemCategoryTrue(
+                                        categoryId
+                                )
+                                .orElseThrow(
+                                        () -> new IllegalArgumentException(
+                                                "Category not found or inaccessible"
+                                        )
+                                )
+                );
+    }
+
+    // =========================================================
+    // Access log helper
+    // =========================================================
+
+    private void saveAccessLog(
+            Document document,
+            User user,
+            AccessAction action
+    ) {
+        DocumentAccessLog accessLog =
+                DocumentAccessLog.builder()
+                        .document(document)
+                        .user(user)
+                        .action(action)
+                        .successful(true)
+                        .build();
+
+        accessLogRepository.save(accessLog);
+    }
+
+    // =========================================================
+    // Archive state helper
+    // =========================================================
+
+    private void applyArchiveState(
+            Document document,
+            boolean archived
+    ) {
+        document.setArchived(archived);
+
+        document.setStatus(
+                archived
+                        ? DocumentStatus.ARCHIVED
+                        : DocumentStatus.ACTIVE
+        );
+    }
+
+    // =========================================================
+    // Advanced search helpers
+    // =========================================================
+
+    private Pageable createSearchPageable(
+            DocumentSearchRequest request
+    ) {
+        int page =
+                request.getPage() != null
+                        ? request.getPage()
+                        : 0;
+
+        int size =
+                request.getSize() != null
+                        ? request.getSize()
+                        : DEFAULT_PAGE_SIZE;
+
+        String sortProperty =
+                getSearchSortProperty(request);
+
+        Sort.Direction direction =
+                request.getSortDirection() != null
+                        ? request.getSortDirection()
+                        : Sort.Direction.DESC;
+
+        Sort sort = Sort.by(
+                direction,
+                sortProperty
+        );
+
+        /*
+         * Secondary sorting gives stable pagination when two
+         * documents have the same value in the selected field.
+         */
+        if (!"id".equals(sortProperty)) {
+            sort = sort.and(
+                    Sort.by(
+                            Sort.Direction.ASC,
+                            "id"
+                    )
+            );
+        }
+
+        return PageRequest.of(
+                validatePage(page),
+                validateSize(size),
+                sort
+        );
+    }
+
+    private String getSearchSortProperty(
+            DocumentSearchRequest request
+    ) {
+        if (request.getSortBy() == null) {
+            return "createdAt";
+        }
+
+        return switch (request.getSortBy()) {
+            case CREATED_AT -> "createdAt";
+            case UPDATED_AT -> "updatedAt";
+            case TITLE -> "title";
+            case EXPIRY_DATE -> "expiryDate";
+            case FILE_SIZE -> "fileSize";
+        };
+    }
+
+    private void validateSearchDateRanges(
+            DocumentSearchRequest request
+    ) {
+        if (request.getExpiryFrom() != null
+                && request.getExpiryTo() != null
+                && request.getExpiryFrom()
+                .isAfter(request.getExpiryTo())) {
+
+            throw new IllegalArgumentException(
+                    "Expiry start date cannot be after expiry end date"
+            );
+        }
+
+        if (request.getCreatedFrom() != null
+                && request.getCreatedTo() != null
+                && request.getCreatedFrom()
+                .isAfter(request.getCreatedTo())) {
+
+            throw new IllegalArgumentException(
+                    "Created start date cannot be after created end date"
+            );
+        }
+    }
+
+    // =========================================================
+    // Pagination helpers
+    // =========================================================
+
+    private Pageable createPageable(
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection
+    ) {
+        int validPage = validatePage(page);
+        int validSize = validateSize(size);
+
+        String validSortBy =
+                sortBy != null
+                        && ALLOWED_SORT_FIELDS.contains(sortBy)
+                        ? sortBy
+                        : "createdAt";
+
+        Sort sort =
+                "asc".equalsIgnoreCase(sortDirection)
+                        ? Sort.by(validSortBy).ascending()
+                        : Sort.by(validSortBy).descending();
+
+        return PageRequest.of(
+                validPage,
+                validSize,
+                sort
+        );
+    }
+
+    private Pageable createDefaultPageable(
+            int page,
+            int size
+    ) {
+        return PageRequest.of(
+                validatePage(page),
+                validateSize(size),
+                Sort.by("createdAt").descending()
+        );
+    }
+
+    private int validatePage(int page) {
+        return Math.max(page, 0);
+    }
+
+    private int validateSize(int size) {
+        if (size < 1) {
+            return DEFAULT_PAGE_SIZE;
+        }
+
+        return Math.min(size, MAX_PAGE_SIZE);
+    }
+
+    // =========================================================
+    // Response helper
+    // =========================================================
+
+    private DocumentListResponse buildListResponse(
+            Page<Document> documentPage
+    ) {
+        return DocumentListResponse.builder()
+                .documents(
+                        documentPage
+                                .getContent()
+                                .stream()
+                                .map(documentMapper::toResponse)
+                                .toList()
+                )
+                .totalElements(
+                        documentPage.getTotalElements()
+                )
+                .totalPages(
+                        documentPage.getTotalPages()
+                )
+                .currentPage(
+                        documentPage.getNumber()
+                )
+                .pageSize(
+                        documentPage.getSize()
+                )
+                .first(
+                        documentPage.isFirst()
+                )
+                .last(
+                        documentPage.isLast()
+                )
+                .hasNext(
+                        documentPage.hasNext()
+                )
+                .hasPrevious(
+                        documentPage.hasPrevious()
+                )
+                .build();
+    }
+
+    // =========================================================
+    // Text/file helpers
+    // =========================================================
+
+    private String normalizeRequiredText(
+            String value,
+            String errorMessage
+    ) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(
+                    errorMessage
+            );
+        }
+
+        return value.trim();
+    }
+
+    private String normalizeNullableText(
+            String value
+    ) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalizedValue = value.trim();
+
+        return normalizedValue.isEmpty()
+                ? null
+                : normalizedValue;
+    }
+
+    private String getOriginalFileName(
+            MultipartFile file
+    ) {
+        String originalFileName =
+                file.getOriginalFilename();
+
+        if (originalFileName == null
+                || originalFileName.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Original file name is missing"
+            );
+        }
+
+        return originalFileName.trim();
+    }
+
+    private String getFileType(
+            String originalFileName,
+            String mimeType
+    ) {
+        int dotIndex =
+                originalFileName.lastIndexOf('.');
+
+        if (dotIndex >= 0
+                && dotIndex < originalFileName.length() - 1) {
+            return originalFileName
+                    .substring(dotIndex + 1)
+                    .toLowerCase(Locale.ROOT);
+        }
+
+        return switch (mimeType) {
+            case "application/pdf" -> "pdf";
+            case "image/jpeg" -> "jpg";
+            case "image/png" -> "png";
+            case "image/webp" -> "webp";
+            default -> "unknown";
+        };
+    }
+}package com.lastkey.backend.document.service;
+
+import com.lastkey.backend.document.dto.storage.StorageResult;
+import org.springframework.core.io.Resource;
+import org.springframework.web.multipart.MultipartFile;
+
+public interface FileStorageService {
+
+    StorageResult storeFile(
+            MultipartFile file,
+            String ownerFolder
+    );
+
+    Resource loadFileAsResource(
+            String storedFileName,
+            String ownerFolder
+    );
+
+    void deleteFile(
+            String storedFileName,
+            String ownerFolder
+    );
+
+    String getMimeType(
+            MultipartFile file
+    );
+
+    String calculateChecksum(
+            MultipartFile file
+    );
+}package com.lastkey.backend.document.service.impl;
+
+import com.lastkey.backend.config.FileStorageProperties;
+import com.lastkey.backend.document.dto.storage.StorageResult;
+import com.lastkey.backend.document.exception.FileStorageException;
+import com.lastkey.backend.document.service.FileEncryptionService;
+import com.lastkey.backend.document.service.FileStorageService;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+@Service
+public class FileStorageServiceImpl
+        implements FileStorageService {
+
+    private static final Set<String> ALLOWED_FILE_TYPES =
+            Set.of(
+                    "application/pdf",
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp"
+            );
+
+    private static final Map<String, String> MIME_EXTENSIONS =
+            Map.of(
+                    "application/pdf",
+                    ".pdf",
+
+                    "image/jpeg",
+                    ".jpg",
+
+                    "image/png",
+                    ".png",
+
+                    "image/webp",
+                    ".webp"
+            );
+
+    private static final long MAX_FILE_SIZE =
+            20L * 1024 * 1024;
+
+    private static final String ENCRYPTED_FILE_EXTENSION =
+            ".lastkey";
+
+    private final Path rootStorageLocation;
+
+    private final FileEncryptionService
+            fileEncryptionService;
+
+    public FileStorageServiceImpl(
+            FileStorageProperties properties,
+            FileEncryptionService fileEncryptionService
+    ) {
+
+        this.fileEncryptionService =
+                fileEncryptionService;
+
+        String uploadDirectory =
+                properties.getUploadDir();
+
+        if (uploadDirectory == null
+                || uploadDirectory.isBlank()) {
+
+            throw new FileStorageException(
+                    "Property 'file.upload-dir' is missing"
+            );
+        }
+
+        this.rootStorageLocation =
+                Paths.get(uploadDirectory)
+                        .toAbsolutePath()
+                        .normalize();
+
+        try {
+
+            Files.createDirectories(
+                    rootStorageLocation
+            );
+
+        } catch (IOException exception) {
+
+            throw new FileStorageException(
+                    "Could not create file upload directory",
+                    exception
+            );
+        }
+    }
+
+    @Override
+    public StorageResult storeFile(
+            MultipartFile file,
+            String ownerFolder
+    ) {
+
+        validateFile(file);
+
+        String mimeType =
+                getMimeType(file);
+
+        /*
+         * Preserve the original extension inside the encrypted
+         * stored filename for easier internal diagnostics.
+         *
+         * Example:
+         * UUID.pdf.lastkey
+         */
+        String originalExtension =
+                MIME_EXTENSIONS.get(
+                        mimeType
+                );
+
+        String storedFileName =
+                UUID.randomUUID()
+                        + originalExtension
+                        + ENCRYPTED_FILE_EXTENSION;
+
+        Path userDirectory =
+                createUserDirectory(
+                        ownerFolder
+                );
+
+        Path targetLocation =
+                userDirectory
+                        .resolve(
+                                storedFileName
+                        )
+                        .normalize();
+
+        validateStoragePath(
+                targetLocation,
+                userDirectory
+        );
+
+        try (
+                InputStream plaintextInputStream =
+                        file.getInputStream();
+
+                OutputStream encryptedOutputStream =
+                        Files.newOutputStream(
+                                targetLocation,
+                                StandardOpenOption.CREATE_NEW,
+                                StandardOpenOption.WRITE
+                        )
+        ) {
+
+            fileEncryptionService.encrypt(
+                    plaintextInputStream,
+                    encryptedOutputStream
+            );
+
+            encryptedOutputStream.flush();
+
+            String originalChecksum =
+                    calculateChecksum(file);
+
+            String encryptedChecksum =
+                    calculateChecksum(targetLocation);
+
+            return StorageResult.builder()
+                    .storedFileName(storedFileName)
+                    .encrypted(true)
+                    .encryptionAlgorithm("AES/GCM/NoPadding")
+                    .encryptionKeyVersion(1)
+                    .initializationVector(null)
+                    .originalChecksum(originalChecksum)
+                    .encryptedChecksum(encryptedChecksum)
+                    .originalSize(file.getSize())
+                    .encryptedSize(Files.size(targetLocation))
+                    .mimeType(mimeType)
+                    .originalFileName(
+                            sanitizeFileName(
+                                    file.getOriginalFilename()
+                            )
+                    )
+                    .build();
+
+        } catch (IOException exception) {
+
+            deletePartiallyStoredFile(
+                    targetLocation
+            );
+
+            throw new FileStorageException(
+                    "Could not store encrypted file: "
+                            + sanitizeFileName(
+                            file.getOriginalFilename()
+                    ),
+                    exception
+            );
+
+        } catch (RuntimeException exception) {
+
+            deletePartiallyStoredFile(
+                    targetLocation
+            );
+
+            throw exception;
+        }
+    }
+
+    @Override
+    public Resource loadFileAsResource(
+            String storedFileName,
+            String ownerFolder
+    ) {
+
+        validateStoredFileName(
+                storedFileName
+        );
+
+        Path userDirectory =
+                getUserDirectory(
+                        ownerFolder
+                );
+
+        Path filePath =
+                userDirectory
+                        .resolve(
+                                storedFileName
+                        )
+                        .normalize();
+
+        validateStoragePath(
+                filePath,
+                userDirectory
+        );
+
+        if (!Files.exists(filePath)
+                || !Files.isRegularFile(filePath)
+                || !Files.isReadable(filePath)) {
+
+            throw new FileStorageException(
+                    "File not found or cannot be read"
+            );
+        }
+
+        try (
+                InputStream encryptedInputStream =
+                        Files.newInputStream(
+                                filePath,
+                                StandardOpenOption.READ
+                        )
+        ) {
+
+            byte[] decryptedFileBytes =
+                    fileEncryptionService.decrypt(
+                            encryptedInputStream
+                    );
+
+            /*
+             * The decrypted bytes exist only in memory.
+             * No temporary unencrypted file is written to disk.
+             */
+            return new NamedByteArrayResource(
+                    decryptedFileBytes,
+                    removeEncryptedExtension(
+                            storedFileName
+                    )
+            );
+
+        } catch (IOException exception) {
+
+            throw new FileStorageException(
+                    "Could not read encrypted document",
+                    exception
+            );
+        }
+    }
+
+    @Override
+    public void deleteFile(
+            String storedFileName,
+            String ownerFolder
+    ) {
+
+        validateStoredFileName(
+                storedFileName
+        );
+
+        Path userDirectory =
+                getUserDirectory(
+                        ownerFolder
+                );
+
+        Path filePath =
+                userDirectory
+                        .resolve(
+                                storedFileName
+                        )
+                        .normalize();
+
+        validateStoragePath(
+                filePath,
+                userDirectory
+        );
+
+        try {
+
+            Files.deleteIfExists(
+                    filePath
+            );
+
+            deleteDirectoryIfEmpty(
+                    userDirectory
+            );
+
+        } catch (IOException exception) {
+
+            throw new FileStorageException(
+                    "Could not delete stored file",
+                    exception
+            );
+        }
+    }
+
+    @Override
+    public String getMimeType(
+            MultipartFile file
+    ) {
+
+        if (file == null
+                || file.isEmpty()) {
+
+            throw new FileStorageException(
+                    "Cannot detect type of an empty file"
+            );
+        }
+
+        try (
+                InputStream inputStream =
+                        file.getInputStream()
+        ) {
+
+            byte[] header =
+                    inputStream.readNBytes(
+                            12
+                    );
+
+            String detectedType =
+                    detectMimeType(
+                            header
+                    );
+
+            if (detectedType == null
+                    || !ALLOWED_FILE_TYPES.contains(
+                    detectedType
+            )) {
+
+                throw new FileStorageException(
+                        "Only PDF, JPG, PNG and WEBP "
+                                + "files are allowed"
+                );
+            }
+
+            return detectedType;
+
+        } catch (IOException exception) {
+
+            throw new FileStorageException(
+                    "Could not determine file type",
+                    exception
+            );
+        }
+    }
+
+    @Override
+    public String calculateChecksum(
+            MultipartFile file
+    ) {
+
+        if (file == null
+                || file.isEmpty()) {
+
+            throw new FileStorageException(
+                    "Cannot calculate checksum "
+                            + "of an empty file"
+            );
+        }
+
+        try (
+                InputStream inputStream =
+                        file.getInputStream()
+        ) {
+
+            MessageDigest messageDigest =
+                    MessageDigest.getInstance(
+                            "SHA-256"
+                    );
+
+            byte[] buffer =
+                    new byte[8192];
+
+            int bytesRead;
+
+            while ((bytesRead =
+                    inputStream.read(buffer)) != -1) {
+
+                messageDigest.update(
+                        buffer,
+                        0,
+                        bytesRead
+                );
+            }
+
+            return HexFormat.of()
+                    .formatHex(
+                            messageDigest.digest()
+                    );
+
+        } catch (IOException exception) {
+
+            throw new FileStorageException(
+                    "Could not calculate file checksum",
+                    exception
+            );
+
+        } catch (NoSuchAlgorithmException exception) {
+
+            throw new FileStorageException(
+                    "SHA-256 algorithm is unavailable",
+                    exception
+            );
+        }
+    }
+
+    private String calculateChecksum(
+            Path filePath
+    ) {
+
+        try (
+                InputStream inputStream =
+                        Files.newInputStream(
+                                filePath,
+                                StandardOpenOption.READ
+                        )
+        ) {
+
+            MessageDigest messageDigest =
+                    MessageDigest.getInstance(
+                            "SHA-256"
+                    );
+
+            byte[] buffer =
+                    new byte[8192];
+
+            int bytesRead;
+
+            while ((bytesRead =
+                    inputStream.read(buffer)) != -1) {
+
+                messageDigest.update(
+                        buffer,
+                        0,
+                        bytesRead
+                );
+            }
+
+            return HexFormat.of()
+                    .formatHex(
+                            messageDigest.digest()
+                    );
+
+        } catch (IOException exception) {
+
+            throw new FileStorageException(
+                    "Could not calculate stored file checksum",
+                    exception
+            );
+
+        } catch (NoSuchAlgorithmException exception) {
+
+            throw new FileStorageException(
+                    "SHA-256 algorithm is unavailable",
+                    exception
+            );
+        }
+    }
+
+    private void validateFile(
+            MultipartFile file
+    ) {
+
+        if (file == null
+                || file.isEmpty()) {
+
+            throw new FileStorageException(
+                    "Please select a document to upload"
+            );
+        }
+
+        if (file.getSize() > MAX_FILE_SIZE) {
+
+            throw new FileStorageException(
+                    "File size cannot exceed 20 MB"
+            );
+        }
+
+        String originalFileName =
+                file.getOriginalFilename();
+
+        if (originalFileName == null
+                || originalFileName.isBlank()) {
+
+            throw new FileStorageException(
+                    "Invalid file name"
+            );
+        }
+
+        sanitizeFileName(
+                originalFileName
+        );
+
+        /*
+         * Validate using actual file bytes rather than trusting
+         * the content type supplied by the browser.
+         */
+        getMimeType(file);
+    }
+
+    private Path createUserDirectory(
+            String ownerFolder
+    ) {
+
+        Path userDirectory =
+                getUserDirectory(
+                        ownerFolder
+                );
+
+        try {
+
+            Files.createDirectories(
+                    userDirectory
+            );
+
+            return userDirectory;
+
+        } catch (IOException exception) {
+
+            throw new FileStorageException(
+                    "Could not create user storage directory",
+                    exception
+            );
+        }
+    }
+
+    private Path getUserDirectory(
+            String ownerFolder
+    ) {
+
+        if (ownerFolder == null
+                || ownerFolder.isBlank()) {
+
+            throw new FileStorageException(
+                    "Owner folder is required"
+            );
+        }
+
+        String normalizedOwnerFolder =
+                ownerFolder.trim();
+
+        if (!normalizedOwnerFolder.matches(
+                "[a-zA-Z0-9_-]+"
+        )) {
+
+            throw new FileStorageException(
+                    "Invalid owner folder"
+            );
+        }
+
+        Path userDirectory =
+                rootStorageLocation
+                        .resolve(
+                                normalizedOwnerFolder
+                        )
+                        .normalize();
+
+        if (!userDirectory.startsWith(
+                rootStorageLocation
+        )) {
+
+            throw new FileStorageException(
+                    "Invalid owner storage path"
+            );
+        }
+
+        return userDirectory;
+    }
+
+    private void validateStoragePath(
+            Path filePath,
+            Path expectedDirectory
+    ) {
+
+        if (!filePath.startsWith(
+                expectedDirectory
+        )) {
+
+            throw new FileStorageException(
+                    "Invalid file storage path"
+            );
+        }
+    }
+
+    private void validateStoredFileName(
+            String storedFileName
+    ) {
+
+        if (storedFileName == null
+                || storedFileName.isBlank()) {
+
+            throw new FileStorageException(
+                    "Stored file name is required"
+            );
+        }
+
+        String safeFileName =
+                Paths.get(storedFileName)
+                        .getFileName()
+                        .toString();
+
+        if (!safeFileName.equals(
+                storedFileName
+        )
+                || storedFileName.contains("..")) {
+
+            throw new FileStorageException(
+                    "Invalid stored file name"
+            );
+        }
+    }
+
+    private String sanitizeFileName(
+            String fileName
+    ) {
+
+        String sanitized =
+                Paths.get(fileName)
+                        .getFileName()
+                        .toString()
+                        .replaceAll(
+                                "[^a-zA-Z0-9._-]",
+                                "_"
+                        );
+
+        if (sanitized.isBlank()
+                || sanitized.contains("..")) {
+
+            throw new FileStorageException(
+                    "Invalid file name"
+            );
+        }
+
+        return sanitized;
+    }
+
+    private String detectMimeType(
+            byte[] header
+    ) {
+
+        if (isPdf(header)) {
+            return "application/pdf";
+        }
+
+        if (isJpeg(header)) {
+            return "image/jpeg";
+        }
+
+        if (isPng(header)) {
+            return "image/png";
+        }
+
+        if (isWebp(header)) {
+            return "image/webp";
+        }
+
+        return null;
+    }
+
+    private boolean isPdf(
+            byte[] header
+    ) {
+
+        return header.length >= 5
+                && header[0] == '%'
+                && header[1] == 'P'
+                && header[2] == 'D'
+                && header[3] == 'F'
+                && header[4] == '-';
+    }
+
+    private boolean isJpeg(
+            byte[] header
+    ) {
+
+        return header.length >= 3
+                && (header[0] & 0xFF) == 0xFF
+                && (header[1] & 0xFF) == 0xD8
+                && (header[2] & 0xFF) == 0xFF;
+    }
+
+    private boolean isPng(
+            byte[] header
+    ) {
+
+        byte[] pngSignature = {
+                (byte) 0x89,
+                0x50,
+                0x4E,
+                0x47,
+                0x0D,
+                0x0A,
+                0x1A,
+                0x0A
+        };
+
+        if (header.length
+                < pngSignature.length) {
+
+            return false;
+        }
+
+        for (
+                int index = 0;
+                index < pngSignature.length;
+                index++
+        ) {
+
+            if (header[index]
+                    != pngSignature[index]) {
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean isWebp(
+            byte[] header
+    ) {
+
+        return header.length >= 12
+                && header[0] == 'R'
+                && header[1] == 'I'
+                && header[2] == 'F'
+                && header[3] == 'F'
+                && header[8] == 'W'
+                && header[9] == 'E'
+                && header[10] == 'B'
+                && header[11] == 'P';
+    }
+
+    private void deletePartiallyStoredFile(
+            Path targetLocation
+    ) {
+
+        try {
+
+            Files.deleteIfExists(
+                    targetLocation
+            );
+
+        } catch (IOException ignored) {
+
+            /*
+             * Keep the original encryption or storage exception.
+             */
+        }
+    }
+
+    private void deleteDirectoryIfEmpty(
+            Path directory
+    ) {
+
+        if (directory.equals(
+                rootStorageLocation
+        )) {
+            return;
+        }
+
+        try (
+                var entries =
+                        Files.list(directory)
+        ) {
+
+            if (entries.findAny().isEmpty()) {
+                Files.deleteIfExists(
+                        directory
+                );
+            }
+
+        } catch (IOException ignored) {
+
+            /*
+             * Failure to remove an empty owner directory must
+             * not make document deletion fail.
+             */
+        }
+    }
+
+    private String removeEncryptedExtension(
+            String storedFileName
+    ) {
+
+        if (storedFileName.endsWith(
+                ENCRYPTED_FILE_EXTENSION
+        )) {
+
+            return storedFileName.substring(
+                    0,
+                    storedFileName.length()
+                            - ENCRYPTED_FILE_EXTENSION.length()
+            );
+        }
+
+        return storedFileName;
+    }
+
+    private static final class
+    NamedByteArrayResource
+            extends ByteArrayResource {
+
+        private final String fileName;
+
+        private NamedByteArrayResource(
+                byte[] byteArray,
+                String fileName
+        ) {
+
+            super(byteArray);
+
+            this.fileName =
+                    fileName;
+        }
+
+        @Override
+        public String getFilename() {
+            return fileName;
+        }
+    }
+}
+package com.lastkey.backend.document.repository;
+
+import com.lastkey.backend.document.entity.Document;
+import com.lastkey.backend.document.enums.DocumentStatus;
+import com.lastkey.backend.user.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface DocumentRepository
+        extends JpaRepository<Document, UUID>,
+        JpaSpecificationExecutor<Document> {
+
+    Optional<Document> findByIdAndOwner(
+            UUID id,
+            User owner
+    );
+
+    Optional<Document> findByIdAndOwnerAndStatusNot(
+            UUID id,
+            User owner,
+            DocumentStatus status
+    );
+
+    Page<Document> findByOwnerAndStatus(
+            User owner,
+            DocumentStatus status,
+            Pageable pageable
+    );
+
+    List<Document> findByOwnerAndStatus(
+            User owner,
+            DocumentStatus status
+    );
+
+    Page<Document> findByOwnerAndCategoryIdAndStatus(
+            User owner,
+            UUID categoryId,
+            DocumentStatus status,
+            Pageable pageable
+    );
+
+    Page<Document> findByOwnerAndTitleContainingIgnoreCaseAndStatus(
+            User owner,
+            String title,
+            DocumentStatus status,
+            Pageable pageable
+    );
+
+    Page<Document> findByOwnerAndFavoriteTrueAndStatus(
+            User owner,
+            DocumentStatus status,
+            Pageable pageable
+    );
+
+    Page<Document> findByOwnerAndArchivedTrueAndStatus(
+            User owner,
+            DocumentStatus status,
+            Pageable pageable
+    );
+
+    Page<Document> findByOwnerAndArchivedFalseAndStatus(
+            User owner,
+            DocumentStatus status,
+            Pageable pageable
+    );
+
+    Page<Document> findByOwnerAndFileTypeIgnoreCaseAndStatus(
+            User owner,
+            String fileType,
+            DocumentStatus status,
+            Pageable pageable
+    );
+
+    /*
+     * Used by DocumentExpiryScheduler.
+     * Returns active documents whose expiry date is inside
+     * the scheduler processing window.
+     */
+    List<Document> findByStatusAndExpiryDateBetween(
+            DocumentStatus status,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    /*
+     * Returns active documents that are already expired and
+     * whose final expiry notification has not yet been sent.
+     */
+    List<Document>
+    findByStatusAndExpiryDateLessThanEqualAndExpiryNotificationSentFalse(
+            DocumentStatus status,
+            LocalDate expiryDate
+    );
+
+    boolean existsByStoredFileName(
+            String storedFileName
+    );
+
+    boolean existsByChecksumAndOwner(
+            String checksum,
+            User owner
+    );
+
+    long countByOwnerAndStatus(
+            User owner,
+            DocumentStatus status
+    );
+
+    long countByOwnerAndFavoriteTrueAndStatus(
+            User owner,
+            DocumentStatus status
+    );
+
+    long countByOwnerAndArchivedTrueAndStatus(
+            User owner,
+            DocumentStatus status
+    );
+
+    /*
+     * Dashboard:
+     * Counts active documents expiring within the given range.
+     */
+    long countByOwnerAndStatusAndExpiryDateBetween(
+            User owner,
+            DocumentStatus status,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    /*
+     * Dashboard:
+     * Returns the latest five active documents.
+     */
+    List<Document>
+    findTop5ByOwnerAndStatusOrderByCreatedAtDesc(
+            User owner,
+            DocumentStatus status
+    );
+}package com.lastkey.backend.document.entity;
+
+import com.lastkey.backend.category.entity.Category;
+import com.lastkey.backend.document.enums.DocumentStatus;
+import com.lastkey.backend.user.entity.User;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(
+        name = "documents",
+        indexes = {
+                @Index(
+                        name = "idx_document_owner",
+                        columnList = "owner_id"
+                ),
+                @Index(
+                        name = "idx_document_category",
+                        columnList = "category_id"
+                ),
+                @Index(
+                        name = "idx_document_status",
+                        columnList = "status"
+                ),
+                @Index(
+                        name = "idx_document_created_at",
+                        columnList = "created_at"
+                ),
+                @Index(
+                        name = "idx_document_expiry_date",
+                        columnList = "expiry_date"
+                ),
+                @Index(
+                        name = "idx_document_ai_type",
+                        columnList = "ai_document_type"
+                ),
+                @Index(
+                        name = "idx_document_ai_review",
+                        columnList = "ai_review_required"
+                ),
+                @Index(
+                        name = "idx_document_encrypted",
+                        columnList = "encrypted"
+                ),
+                @Index(
+                        name = "idx_document_encryption_key_version",
+                        columnList = "encryption_key_version"
+                )
+        }
+)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Document {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(
+            nullable = false,
+            length = 200
+    )
+    private String title;
+
+    @Column(length = 1000)
+    private String description;
+
+    @Column(
+            name = "original_file_name",
+            nullable = false,
+            length = 255
+    )
+    private String originalFileName;
+
+    @Column(
+            name = "stored_file_name",
+            nullable = false,
+            unique = true,
+            length = 255
+    )
+    private String storedFileName;
+
+    @Column(
+            name = "file_type",
+            nullable = false,
+            length = 100
+    )
+    private String fileType;
+
+    @Column(
+            name = "mime_type",
+            nullable = false,
+            length = 150
+    )
+    private String mimeType;
+
+    @Column(
+            name = "file_size",
+            nullable = false
+    )
+    private Long fileSize;
+
+    @Column(
+            name = "storage_path",
+            nullable = false,
+            length = 1000
+    )
+    private String storagePath;
+
+    /*
+     * SHA-256 checksum of the original unencrypted file.
+     *
+     * This checksum can be used for duplicate-document detection
+     * and verification of the original file after decryption.
+     */
+    @Column(
+            name = "checksum",
+            length = 128
+    )
+    private String checksum;
+
+    /*
+     * =========================================================
+     * FILE ENCRYPTION METADATA
+     * =========================================================
+     */
+
+    /*
+     * Indicates whether the file stored on disk is encrypted.
+     *
+     * Newly uploaded documents are encrypted before they are
+     * written to permanent storage.
+     */
+    @Builder.Default
+    @Column(
+            name = "encrypted",
+            nullable = false
+    )
+    private Boolean encrypted = true;
+
+    /*
+     * Encryption algorithm used to protect the document.
+     *
+     * Example:
+     * AES/GCM/NoPadding
+     */
+    @Column(
+            name = "encryption_algorithm",
+            length = 100
+    )
+    private String encryptionAlgorithm;
+
+    /*
+     * Version of the encryption key used for this document.
+     *
+     * This value supports future encryption-key rotation without
+     * storing the actual secret key in the database.
+     *
+     * Examples:
+     * v1
+     * v2
+     * 2026-01
+     */
+    @Column(
+            name = "encryption_key_version",
+            length = 50
+    )
+    private String encryptionKeyVersion;
+
+    /*
+     * Base64-encoded initialization vector used by AES-GCM.
+     *
+     * The IV is not a secret, but it must be preserved because
+     * the same IV is required when decrypting the document.
+     */
+    @Column(
+            name = "initialization_vector",
+            length = 255
+    )
+    private String initializationVector;
+
+    /*
+     * SHA-256 checksum of the encrypted file stored on disk.
+     *
+     * This allows the application to detect corruption or
+     * modification of the encrypted file before decryption.
+     */
+    @Column(
+            name = "encrypted_checksum",
+            length = 128
+    )
+    private String encryptedChecksum;
+
+    @Builder.Default
+    @Column(
+            nullable = false
+    )
+    private Boolean favorite = false;
+
+    @Builder.Default
+    @Column(
+            nullable = false
+    )
+    private Boolean archived = false;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Column(
+            nullable = false,
+            length = 30
+    )
+    private DocumentStatus status = DocumentStatus.ACTIVE;
+
+    /*
+     * Optional expiry date for documents such as passports,
+     * insurance policies and driving licences.
+     */
+    @Column(name = "expiry_date")
+    private LocalDate expiryDate;
+
+    @Builder.Default
+    @Column(
+            name = "expiry_reminder_30_sent",
+            nullable = false
+    )
+    private Boolean expiryReminder30Sent = false;
+
+    @Builder.Default
+    @Column(
+            name = "expiry_reminder_7_sent",
+            nullable = false
+    )
+    private Boolean expiryReminder7Sent = false;
+
+    @Builder.Default
+    @Column(
+            name = "expiry_reminder_1_sent",
+            nullable = false
+    )
+    private Boolean expiryReminder1Sent = false;
+
+    @Builder.Default
+    @Column(
+            name = "expiry_notification_sent",
+            nullable = false
+    )
+    private Boolean expiryNotificationSent = false;
+
+    @ManyToOne(
+            fetch = FetchType.LAZY,
+            optional = false
+    )
+    @JoinColumn(
+            name = "owner_id",
+            nullable = false,
+            foreignKey = @ForeignKey(
+                    name = "fk_document_owner"
+            )
+    )
+    private User owner;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "category_id",
+            foreignKey = @ForeignKey(
+                    name = "fk_document_category"
+            )
+    )
+    private Category category;
+
+    /*
+     * =========================================================
+     * AI DOCUMENT ANALYSIS DATA
+     * =========================================================
+     */
+
+    /*
+     * AI-detected document type.
+     *
+     * Examples:
+     * PASSPORT
+     * AADHAAR_CARD
+     * PAN_CARD
+     * INSURANCE_POLICY
+     * PROPERTY_DOCUMENT
+     * BANK_STATEMENT
+     */
+    @Column(
+            name = "ai_document_type",
+            length = 100
+    )
+    private String aiDocumentType;
+
+    /*
+     * Category suggested by the AI analysis process.
+     */
+    @Column(
+            name = "ai_suggested_category",
+            length = 150
+    )
+    private String aiSuggestedCategory;
+
+    /*
+     * AI-generated document summary.
+     */
+    @Column(
+            name = "ai_summary",
+            columnDefinition = "TEXT"
+    )
+    private String aiSummary;
+
+    /*
+     * Final combined confidence score produced by OCR,
+     * classification and summarization.
+     *
+     * Expected range: 0.0 to 1.0
+     */
+    @Column(
+            name = "ai_confidence"
+    )
+    private Double aiConfidence;
+
+    /*
+     * Text extracted from the uploaded document through OCR.
+     */
+    @Column(
+            name = "ai_extracted_text",
+            columnDefinition = "TEXT"
+    )
+    private String aiExtractedText;
+
+    /*
+     * JSON representation of structured fields extracted
+     * from the document.
+     *
+     * Examples:
+     * passportNumber
+     * policyNumber
+     * accountNumber
+     * issueDate
+     * expiryDate
+     */
+    @Column(
+            name = "ai_extracted_fields_json",
+            columnDefinition = "TEXT"
+    )
+    private String aiExtractedFieldsJson;
+
+    /*
+     * Indicates that the AI result should be manually reviewed.
+     */
+    @Builder.Default
+    @Column(
+            name = "ai_review_required",
+            nullable = false
+    )
+    private Boolean aiReviewRequired = false;
+
+    @Column(
+            name = "created_at",
+            nullable = false,
+            updatable = false
+    )
+    private LocalDateTime createdAt;
+
+    @Column(
+            name = "updated_at",
+            nullable = false
+    )
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+
+        LocalDateTime now =
+                LocalDateTime.now();
+
+        this.createdAt = now;
+        this.updatedAt = now;
+
+        applyDefaultValues();
+        normalizeFields();
+        normalizeAiConfidence();
+        validateEncryptionMetadata();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+
+        this.updatedAt =
+                LocalDateTime.now();
+
+        applyDefaultValues();
+        normalizeFields();
+        normalizeAiConfidence();
+        validateEncryptionMetadata();
+    }
+
+    public void resetExpiryReminderFlags() {
+
+        this.expiryReminder30Sent = false;
+        this.expiryReminder7Sent = false;
+        this.expiryReminder1Sent = false;
+        this.expiryNotificationSent = false;
+    }
+
+    public void clearAiAnalysis() {
+
+        this.aiDocumentType = null;
+        this.aiSuggestedCategory = null;
+        this.aiSummary = null;
+        this.aiConfidence = null;
+        this.aiExtractedText = null;
+        this.aiExtractedFieldsJson = null;
+        this.aiReviewRequired = false;
+    }
+
+    /*
+     * Applies encryption metadata after a file is encrypted.
+     */
+    public void applyEncryptionMetadata(
+            String encryptionAlgorithm,
+            String encryptionKeyVersion,
+            String initializationVector,
+            String encryptedChecksum
+    ) {
+
+        this.encrypted = true;
+        this.encryptionAlgorithm = encryptionAlgorithm;
+        this.encryptionKeyVersion = encryptionKeyVersion;
+        this.initializationVector = initializationVector;
+        this.encryptedChecksum = encryptedChecksum;
+
+        normalizeEncryptionFields();
+    }
+
+    /*
+     * Clears encryption metadata and marks the stored file
+     * as unencrypted.
+     *
+     * This should normally be used only for legacy documents
+     * or controlled migration operations.
+     */
+    public void clearEncryptionMetadata() {
+
+        this.encrypted = false;
+        this.encryptionAlgorithm = null;
+        this.encryptionKeyVersion = null;
+        this.initializationVector = null;
+        this.encryptedChecksum = null;
+    }
+
+    /*
+     * Returns true only when the document is marked as encrypted
+     * and all required decryption metadata is available.
+     */
+    public boolean hasCompleteEncryptionMetadata() {
+
+        return Boolean.TRUE.equals(this.encrypted)
+                && this.encryptionAlgorithm != null
+                && !this.encryptionAlgorithm.isBlank()
+                && this.encryptionKeyVersion != null
+                && !this.encryptionKeyVersion.isBlank()
+                && this.initializationVector != null
+                && !this.initializationVector.isBlank();
+    }
+
+    private void applyDefaultValues() {
+
+        if (this.favorite == null) {
+            this.favorite = false;
+        }
+
+        if (this.archived == null) {
+            this.archived = false;
+        }
+
+        if (this.encrypted == null) {
+            this.encrypted = true;
+        }
+
+        if (this.status == null) {
+            this.status = DocumentStatus.ACTIVE;
+        }
+
+        if (this.expiryReminder30Sent == null) {
+            this.expiryReminder30Sent = false;
+        }
+
+        if (this.expiryReminder7Sent == null) {
+            this.expiryReminder7Sent = false;
+        }
+
+        if (this.expiryReminder1Sent == null) {
+            this.expiryReminder1Sent = false;
+        }
+
+        if (this.expiryNotificationSent == null) {
+            this.expiryNotificationSent = false;
+        }
+
+        if (this.aiReviewRequired == null) {
+            this.aiReviewRequired = false;
+        }
+    }
+
+    private void normalizeFields() {
+
+        if (this.title != null) {
+            this.title = this.title.trim();
+        }
+
+        if (this.description != null) {
+            this.description =
+                    normalizeNullable(
+                            this.description
+                    );
+        }
+
+        if (this.originalFileName != null) {
+            this.originalFileName =
+                    this.originalFileName.trim();
+        }
+
+        if (this.storedFileName != null) {
+            this.storedFileName =
+                    this.storedFileName.trim();
+        }
+
+        if (this.fileType != null) {
+            this.fileType =
+                    this.fileType.trim();
+        }
+
+        if (this.mimeType != null) {
+            this.mimeType =
+                    this.mimeType.trim();
+        }
+
+        if (this.storagePath != null) {
+            this.storagePath =
+                    this.storagePath.trim();
+        }
+
+        if (this.checksum != null) {
+            this.checksum =
+                    normalizeNullable(
+                            this.checksum
+                    );
+        }
+
+        normalizeEncryptionFields();
+
+        if (this.aiDocumentType != null) {
+            this.aiDocumentType =
+                    normalizeNullable(
+                            this.aiDocumentType
+                    );
+        }
+
+        if (this.aiSuggestedCategory != null) {
+            this.aiSuggestedCategory =
+                    normalizeNullable(
+                            this.aiSuggestedCategory
+                    );
+        }
+
+        if (this.aiSummary != null) {
+            this.aiSummary =
+                    normalizeNullable(
+                            this.aiSummary
+                    );
+        }
+
+        if (this.aiExtractedText != null) {
+            this.aiExtractedText =
+                    normalizeNullable(
+                            this.aiExtractedText
+                    );
+        }
+
+        if (this.aiExtractedFieldsJson != null) {
+            this.aiExtractedFieldsJson =
+                    normalizeNullable(
+                            this.aiExtractedFieldsJson
+                    );
+        }
+    }
+
+    private void normalizeEncryptionFields() {
+
+        if (this.encryptionAlgorithm != null) {
+            this.encryptionAlgorithm =
+                    normalizeNullable(
+                            this.encryptionAlgorithm
+                    );
+        }
+
+        if (this.encryptionKeyVersion != null) {
+            this.encryptionKeyVersion =
+                    normalizeNullable(
+                            this.encryptionKeyVersion
+                    );
+        }
+
+        if (this.initializationVector != null) {
+            this.initializationVector =
+                    normalizeNullable(
+                            this.initializationVector
+                    );
+        }
+
+        if (this.encryptedChecksum != null) {
+            this.encryptedChecksum =
+                    normalizeNullable(
+                            this.encryptedChecksum
+                    );
+        }
+    }
+
+    private void normalizeAiConfidence() {
+
+        if (this.aiConfidence == null) {
+            return;
+        }
+
+        if (this.aiConfidence < 0.0) {
+            this.aiConfidence = 0.0;
+        }
+
+        if (this.aiConfidence > 1.0) {
+            this.aiConfidence = 1.0;
+        }
+    }
+
+    /*
+     * Prevents unencrypted documents from retaining stale
+     * encryption metadata.
+     *
+     * Complete metadata validation will be handled by the
+     * encryption service because legacy documents may initially
+     * be migrated without all fields being available.
+     */
+    private void validateEncryptionMetadata() {
+
+        if (Boolean.FALSE.equals(this.encrypted)) {
+            this.encryptionAlgorithm = null;
+            this.encryptionKeyVersion = null;
+            this.initializationVector = null;
+            this.encryptedChecksum = null;
+        }
+    }
+
+    private String normalizeNullable(
+            String value
+    ) {
+
+        if (value == null) {
+            return null;
+        }
+
+        String normalizedValue =
+                value.trim();
+
+        return normalizedValue.isEmpty()
+                ? null
+                : normalizedValue;
+    }
+}

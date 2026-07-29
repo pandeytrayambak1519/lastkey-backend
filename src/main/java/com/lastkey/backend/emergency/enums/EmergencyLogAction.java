@@ -1,0 +1,28 @@
+package com.lastkey.backend.emergency.enums;
+
+public enum EmergencyLogAction {
+
+    REQUEST_CREATED,
+
+    OWNER_NOTIFIED,
+
+    WAITING_PERIOD_STARTED,
+
+    OWNER_CANCELLED,
+
+    ADMIN_APPROVED,
+
+    ADMIN_REJECTED,
+
+    DOCUMENTS_RELEASED,
+
+    ACCESS_REVOKED,
+
+    REQUEST_EXPIRED,
+
+    STATUS_UPDATED,
+
+    EVIDENCE_UPDATED,
+
+    RELEASE_ATTEMPT_FAILED
+}

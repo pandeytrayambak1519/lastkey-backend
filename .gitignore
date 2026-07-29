@@ -1,0 +1,32 @@
+# Maven
+target/
+
+# IntelliJ
+.idea/
+*.iml
+
+# Eclipse / STS
+.project
+.classpath
+.settings/
+
+# VS Code
+.vscode/
+
+# Logs
+logs/
+*.log
+
+# Uploads
+storage/
+uploads/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+
+# Maven Wrapper Cache
+.mvn/wrapper/maven-wrapper.jar

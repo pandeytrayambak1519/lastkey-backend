@@ -1,0 +1,28 @@
+package com.lastkey.backend.exception;
+
+public enum ErrorCode {
+
+    VALIDATION_FAILED,
+
+    INVALID_REQUEST,
+
+    RESOURCE_NOT_FOUND,
+
+    ACCESS_DENIED,
+
+    AUTHENTICATION_FAILED,
+
+    ACCOUNT_DISABLED,
+
+    FILE_UPLOAD_FAILED,
+
+    FILE_NOT_FOUND,
+
+    FILE_TOO_LARGE,
+
+    DUPLICATE_RESOURCE,
+
+    DATABASE_ERROR,
+
+    INTERNAL_SERVER_ERROR
+}
