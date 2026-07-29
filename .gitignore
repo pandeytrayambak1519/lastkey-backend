@@ -17,10 +17,6 @@ target/
 logs/
 *.log
 
-# Uploads
-storage/
-uploads/
-
 # OS Files
 .DS_Store
 Thumbs.db

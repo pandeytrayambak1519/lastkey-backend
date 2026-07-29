@@ -19,60 +19,52 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter
-            jwtAuthenticationFilter;
-
-    private final CustomAuthenticationEntryPoint
-            customAuthenticationEntryPoint;
-
-    private final CustomAccessDeniedHandler
-            customAccessDeniedHandler;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            CustomAuthenticationEntryPoint
-                    customAuthenticationEntryPoint,
-            CustomAccessDeniedHandler
-                    customAccessDeniedHandler
+            CustomAuthenticationEntryPoint customAuthenticationEntryPoint,
+            CustomAccessDeniedHandler customAccessDeniedHandler
     ) {
-
-        this.jwtAuthenticationFilter =
-                jwtAuthenticationFilter;
-
-        this.customAuthenticationEntryPoint =
-                customAuthenticationEntryPoint;
-
-        this.customAccessDeniedHandler =
-                customAccessDeniedHandler;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
+        this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http
-    ) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+            throws Exception {
 
         http
+
+                // ✅ Enable CORS
+                .cors(cors -> {
+                })
+
+                // Disable CSRF
                 .csrf(csrf -> csrf.disable())
 
+                // Stateless JWT
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
 
+                // Exception handlers
                 .exceptionHandling(exception ->
                         exception
-                                .authenticationEntryPoint(
-                                        customAuthenticationEntryPoint
-                                )
-                                .accessDeniedHandler(
-                                        customAccessDeniedHandler
-                                )
+                                .authenticationEntryPoint(customAuthenticationEntryPoint)
+                                .accessDeniedHandler(customAccessDeniedHandler)
                 )
 
+                // Authorization
                 .authorizeHttpRequests(auth -> auth
 
                         .requestMatchers(
+
                                 "/api/v1/auth/**",
 
                                 "/swagger-ui/**",
@@ -84,14 +76,13 @@ public class SecurityConfig {
                                 "/actuator/health",
 
                                 "/uploads/profile-images/**"
-                        )
-                        .permitAll()
+
+                        ).permitAll()
 
                         .requestMatchers(
                                 "/api/v1/notifications/**",
                                 "/api/v1/nominee-access/**"
-                        )
-                        .authenticated()
+                        ).authenticated()
 
                         .anyRequest()
                         .authenticated()
@@ -106,12 +97,10 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager
-    authenticationManager(
+    public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration
     ) throws Exception {
 
-        return configuration
-                .getAuthenticationManager();
+        return configuration.getAuthenticationManager();
     }
 }
