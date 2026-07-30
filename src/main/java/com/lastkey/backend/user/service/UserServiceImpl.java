@@ -169,6 +169,14 @@ public class UserServiceImpl implements UserService {
 
         user.setPhone(normalizedPhone);
 
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setOccupation(request.getOccupation());
+        user.setAddress(request.getAddress());
+        user.setCity(request.getCity());
+        user.setState(request.getState());
+        user.setCountry(request.getCountry());
+        user.setPostalCode(request.getPostalCode());
+
         User updatedUser =
                 userRepository.save(user);
 

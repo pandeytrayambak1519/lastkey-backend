@@ -2,6 +2,7 @@ package com.lastkey.backend.user.dto.response;
 
 import com.lastkey.backend.common.enums.AccountStatus;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -12,6 +13,13 @@ public class UserProfileResponse {
     private String lastName;
     private String email;
     private String phone;
+    private LocalDate dateOfBirth;
+    private String occupation;
+    private String address;
+    private String city;
+    private String state;
+    private String country;
+    private String postalCode;
     private String profileImageUrl;
     private Boolean emailVerified;
     private AccountStatus accountStatus;
@@ -62,6 +70,63 @@ public class UserProfileResponse {
     public void setPhone(String phone) {
         this.phone = phone;
     }
+
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getOccupation() {
+        return occupation;
+    }
+
+    public void setOccupation(String occupation) {
+        this.occupation = occupation;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public String getPostalCode() {
+        return postalCode;
+    }
+
+    public void setPostalCode(String postalCode) {
+        this.postalCode = postalCode;
+    }
+
 
     public String getProfileImageUrl() {
         return profileImageUrl;

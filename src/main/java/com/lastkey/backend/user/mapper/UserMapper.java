@@ -20,6 +20,13 @@ public class UserMapper {
         response.setLastName(user.getLastName());
         response.setEmail(user.getEmail());
         response.setPhone(user.getPhone());
+        response.setDateOfBirth(user.getDateOfBirth());
+        response.setOccupation(user.getOccupation());
+        response.setAddress(user.getAddress());
+        response.setCity(user.getCity());
+        response.setState(user.getState());
+        response.setCountry(user.getCountry());
+        response.setPostalCode(user.getPostalCode());
         response.setProfileImageUrl(user.getProfileImageUrl());
         response.setEmailVerified(user.getEmailVerified());
         response.setAccountStatus(user.getAccountStatus());

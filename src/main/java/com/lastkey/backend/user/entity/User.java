@@ -5,6 +5,7 @@ import com.lastkey.backend.role.entity.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -65,6 +66,27 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    @Column
+    private LocalDate dateOfBirth;
+
+    @Column(length = 100)
+    private String occupation;
+
+    @Column(length = 255)
+    private String address;
+
+    @Column(length = 100)
+    private String city;
+
+    @Column(length = 100)
+    private String state;
+
+    @Column(length = 100)
+    private String country;
+
+    @Column(length = 20)
+    private String postalCode;
 
     @Column(length = 500)
     private String profileImageUrl;
