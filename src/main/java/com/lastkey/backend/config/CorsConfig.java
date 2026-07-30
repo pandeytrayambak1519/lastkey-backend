@@ -7,7 +7,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
@@ -21,46 +20,35 @@ public class CorsConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 1. Existing allowed origins copy karo
-        List<String> allowedPatterns = new ArrayList<>();
-        if (corsProperties.getAllowedOrigins() != null) {
-            allowedPatterns.addAll(corsProperties.getAllowedOrigins());
+        // Wildcard patterns for all Vercel domains and local dev environments
+        configuration.setAllowedOriginPatterns(List.of(
+                "https://*.vercel.app",
+                "http://localhost:*"
+        ));
+
+        if (corsProperties.getAllowedMethods() != null && !corsProperties.getAllowedMethods().isEmpty()) {
+            configuration.setAllowedMethods(corsProperties.getAllowedMethods());
+        } else {
+            configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         }
 
-        // 2. Vercel wildcard patterns add karo taaki har Vercel build/preview URL auto-allow ho jaye
-        allowedPatterns.add("https://*.vercel.app");
-        allowedPatterns.add("http://localhost:*");
+        if (corsProperties.getAllowedHeaders() != null && !corsProperties.getAllowedHeaders().isEmpty()) {
+            configuration.setAllowedHeaders(corsProperties.getAllowedHeaders());
+        } else {
+            configuration.setAllowedHeaders(List.of("*"));
+        }
 
-        // 3. setAllowedOrigins ki jagah setAllowedOriginPatterns call karo
-        configuration.setAllowedOriginPatterns(allowedPatterns);
+        if (corsProperties.getExposedHeaders() != null && !corsProperties.getExposedHeaders().isEmpty()) {
+            configuration.setExposedHeaders(corsProperties.getExposedHeaders());
+        } else {
+            configuration.setExposedHeaders(List.of("Authorization", "Link", "X-Total-Count"));
+        }
 
-        configuration.setAllowedMethods(
-                corsProperties.getAllowedMethods()
-        );
+        configuration.setAllowCredentials(corsProperties.isAllowCredentials());
+        configuration.setMaxAge(corsProperties.getMaxAge());
 
-        configuration.setAllowedHeaders(
-                corsProperties.getAllowedHeaders()
-        );
-
-        configuration.setExposedHeaders(
-                corsProperties.getExposedHeaders()
-        );
-
-        configuration.setAllowCredentials(
-                corsProperties.isAllowCredentials()
-        );
-
-        configuration.setMaxAge(
-                corsProperties.getMaxAge()
-        );
-
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
-        source.registerCorsConfiguration(
-                "/**",
-                configuration
-        );
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }
