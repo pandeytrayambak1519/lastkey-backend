@@ -15,6 +15,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -39,67 +40,53 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)
-            throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // ✅ Link explicit CorsConfigurationSource bean from CorsConfig
+                // 1. Enable CORS explicitly with source
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
-                // Disable CSRF
+                // 2. Disable CSRF
                 .csrf(csrf -> csrf.disable())
 
-                // Stateless JWT
+                // 3. Stateless Session
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
-                        )
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // Exception handlers
+                // 4. Exception Handling
                 .exceptionHandling(exception ->
                         exception
                                 .authenticationEntryPoint(customAuthenticationEntryPoint)
                                 .accessDeniedHandler(customAccessDeniedHandler)
                 )
 
-                // Authorization
+                // 5. Authorization Requests Rule
                 .authorizeHttpRequests(auth -> auth
-
-                        // 1. ALWAYS PERMIT ALL PREFLIGHT (OPTIONS) REQUESTS FROM BROWSER
+                        // Browser Preflight requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        // 2. PUBLIC ENDPOINTS
+                        
+                        // Root & Auth Endpoints (Make sure wildcard matches sub-routes)
+                        .requestMatchers("/", "/health", "/api/v1/auth/**", "/api/v1/auth/*").permitAll()
+                        
+                        // Swagger & Public Resources
                         .requestMatchers(
-                                "/",
-                                "/health",
-                                "/api/v1/auth/**",
-
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/webjars/**",
-
                                 "/actuator/health",
-
                                 "/uploads/profile-images/**"
                         ).permitAll()
 
-                        // 3. PROTECTED ENDPOINTS
-                        .requestMatchers(
-                                "/api/v1/notifications/**",
-                                "/api/v1/nominee-access/**"
-                        ).authenticated()
-
-                        .anyRequest()
-                        .authenticated()
+                        // All other endpoints require authentication
+                        .anyRequest().authenticated()
                 )
 
-                .addFilterBefore(
-                        jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                );
+                // 6. Ensure CORS Filter runs BEFORE Spring Security and JWT Filters
+                .addFilterBefore(new CorsFilter(corsConfigurationSource), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -108,7 +95,6 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration
     ) throws Exception {
-
         return configuration.getAuthenticationManager();
     }
 }
