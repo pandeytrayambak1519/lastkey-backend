@@ -2,9 +2,11 @@ package com.lastkey.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 
@@ -12,10 +14,11 @@ import java.util.List;
 public class CorsConfig {
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    @Order(Ordered.HIGHEST_PRECEDENCE) // Ensure this runs BEFORE Spring Security
+    public CorsFilter corsFilter() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Wildcard patterns for Vercel & Localhost
+        // Allow all origins matching vercel & localhost
         configuration.setAllowedOriginPatterns(List.of(
                 "https://*.vercel.app",
                 "http://localhost:5173",
@@ -30,6 +33,6 @@ public class CorsConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-        return source;
+        return new CorsFilter(source);
     }
 }
