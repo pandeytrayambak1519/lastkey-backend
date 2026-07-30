@@ -5,6 +5,7 @@ import com.lastkey.backend.security.handler.CustomAuthenticationEntryPoint;
 import com.lastkey.backend.security.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -13,6 +14,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -22,15 +24,18 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             CustomAuthenticationEntryPoint customAuthenticationEntryPoint,
-            CustomAccessDeniedHandler customAccessDeniedHandler
+            CustomAccessDeniedHandler customAccessDeniedHandler,
+            CorsConfigurationSource corsConfigurationSource
     ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
         this.customAccessDeniedHandler = customAccessDeniedHandler;
+        this.corsConfigurationSource = corsConfigurationSource;
     }
 
     @Bean
@@ -38,10 +43,8 @@ public class SecurityConfig {
             throws Exception {
 
         http
-
-                // ✅ Enable CORS
-                .cors(cors -> {
-                })
+                // ✅ Link explicit CorsConfigurationSource bean from CorsConfig
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
                 // Disable CSRF
                 .csrf(csrf -> csrf.disable())
@@ -63,8 +66,13 @@ public class SecurityConfig {
                 // Authorization
                 .authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers(
+                        // 1. ALWAYS PERMIT ALL PREFLIGHT (OPTIONS) REQUESTS FROM BROWSER
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // 2. PUBLIC ENDPOINTS
+                        .requestMatchers(
+                                "/",
+                                "/health",
                                 "/api/v1/auth/**",
 
                                 "/swagger-ui/**",
@@ -76,9 +84,9 @@ public class SecurityConfig {
                                 "/actuator/health",
 
                                 "/uploads/profile-images/**"
-
                         ).permitAll()
 
+                        // 3. PROTECTED ENDPOINTS
                         .requestMatchers(
                                 "/api/v1/notifications/**",
                                 "/api/v1/nominee-access/**"
