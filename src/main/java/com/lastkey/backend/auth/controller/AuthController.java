@@ -38,7 +38,6 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-
     private final EmailVerificationService emailVerificationService;
 
     // =========================================================
@@ -69,15 +68,11 @@ public class AuthController {
             )
     })
     public ResponseEntity<RegisterResponse> register(
-
             @Valid
             @RequestBody
             RegisterRequest request
     ) {
-
-        RegisterResponse response =
-                authService.register(request);
-
+        RegisterResponse response = authService.register(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
@@ -115,15 +110,11 @@ public class AuthController {
             )
     })
     public ResponseEntity<LoginResponse> login(
-
             @Valid
             @RequestBody
             LoginRequest request
     ) {
-
-        LoginResponse response =
-                authService.login(request);
-
+        LoginResponse response = authService.login(request);
         return ResponseEntity.ok(response);
     }
 
@@ -155,17 +146,13 @@ public class AuthController {
             )
     })
     public ResponseEntity<LoginResponse> refreshToken(
-
             @Valid
             @RequestBody
             RefreshTokenRequest request
     ) {
-
-        LoginResponse response =
-                authService.refreshToken(
-                        request.getRefreshToken()
-                );
-
+        LoginResponse response = authService.refreshToken(
+                request.getRefreshToken()
+        );
         return ResponseEntity.ok(response);
     }
 
@@ -193,21 +180,13 @@ public class AuthController {
             )
     })
     public ResponseEntity<Map<String, String>> logout(
-
             @Valid
             @RequestBody
             RefreshTokenRequest request
     ) {
-
-        authService.logout(
-                request.getRefreshToken()
-        );
-
+        authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(
-                Map.of(
-                        "message",
-                        "Logout successful."
-                )
+                Map.of("message", "Logout successful.")
         );
     }
 
@@ -239,17 +218,11 @@ public class AuthController {
             )
     })
     public ResponseEntity<EmailVerificationResponse> verifyEmail(
-
             @Valid
             @RequestBody
             VerifyEmailRequest request
     ) {
-
-        EmailVerificationResponse response =
-                emailVerificationService.verifyEmail(
-                        request
-                );
-
+        EmailVerificationResponse response = emailVerificationService.verifyEmail(request);
         return ResponseEntity.ok(response);
     }
 
@@ -281,17 +254,11 @@ public class AuthController {
             )
     })
     public ResponseEntity<EmailVerificationResponse> resendOtp(
-
             @Valid
             @RequestBody
             ResendOtpRequest request
     ) {
-
-        EmailVerificationResponse response =
-                emailVerificationService.resendOtp(
-                        request
-                );
-
+        EmailVerificationResponse response = emailVerificationService.resendOtp(request);
         return ResponseEntity.ok(response);
     }
 
@@ -322,24 +289,15 @@ public class AuthController {
             )
     })
     public ResponseEntity<OtpResponse> forgotPassword(
-
             @Valid
             @RequestBody
             OtpRequest request
     ) {
-
         authService.forgotPassword(request);
-
-        OtpResponse response =
-                OtpResponse.builder()
-                        .success(true)
-                        .message(
-                                "If the email is registered, "
-                                        + "a password-reset OTP "
-                                        + "has been sent."
-                        )
-                        .build();
-
+        OtpResponse response = OtpResponse.builder()
+                .success(true)
+                .message("If the email is registered, a password-reset OTP has been sent.")
+                .build();
         return ResponseEntity.ok(response);
     }
 
@@ -371,24 +329,15 @@ public class AuthController {
             )
     })
     public ResponseEntity<OtpResponse> resetPassword(
-
             @Valid
             @RequestBody
             ResetPasswordRequest request
     ) {
-
         authService.resetPassword(request);
-
-        OtpResponse response =
-                OtpResponse.builder()
-                        .success(true)
-                        .message(
-                                "Password reset successfully. "
-                                        + "Please log in using your "
-                                        + "new password."
-                        )
-                        .build();
-
+        OtpResponse response = OtpResponse.builder()
+                .success(true)
+                .message("Password reset successfully. Please log in using your new password.")
+                .build();
         return ResponseEntity.ok(response);
     }
 }
