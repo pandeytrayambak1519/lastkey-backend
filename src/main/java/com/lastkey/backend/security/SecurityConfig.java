@@ -41,50 +41,39 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
-                // 1. Enable CORS explicitly with source
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
-
-                // 2. Disable CSRF
                 .csrf(csrf -> csrf.disable())
-
-                // 3. Stateless Session
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // 4. Exception Handling
                 .exceptionHandling(exception ->
                         exception
                                 .authenticationEntryPoint(customAuthenticationEntryPoint)
                                 .accessDeniedHandler(customAccessDeniedHandler)
                 )
-
-                // 5. Authorization Requests Rule
                 .authorizeHttpRequests(auth -> auth
-                        // Browser Preflight requests
+                        // 1. ALWAYS ALLOW PREFLIGHT
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        
-                        // Root & Auth Endpoints (Make sure wildcard matches sub-routes)
-                        .requestMatchers("/", "/health", "/api/v1/auth/**", "/api/v1/auth/*").permitAll()
-                        
-                        // Swagger & Public Resources
+
+                        // 2. PUBLIC ENDPOINTS
                         .requestMatchers(
+                                "/",
+                                "/health",
+                                "/actuator/health",
+                                "/api/v1/auth/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/webjars/**",
-                                "/actuator/health",
                                 "/uploads/profile-images/**"
                         ).permitAll()
 
-                        // All other endpoints require authentication
+                        // 3. AUTHENTICATED ENDPOINTS
                         .anyRequest().authenticated()
                 )
-
-                // 6. Ensure CORS Filter runs BEFORE Spring Security and JWT Filters
+                // Force CorsFilter to execute first before Spring Security
                 .addFilterBefore(new CorsFilter(corsConfigurationSource), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
